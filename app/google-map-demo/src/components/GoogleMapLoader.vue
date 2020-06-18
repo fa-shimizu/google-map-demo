@@ -2,25 +2,28 @@
   <div class="main">
     <div class="info">
       <div class="input-box">
-        <span class="form-control center">
-          <label for="lat">緯度</label>
+        <p class="position-label">左下</p>
+        <span class="form-control">
+          <label for="lb-lat">緯度</label>
           <br />
-          <input type="text" name="lat" v-model="inputConfig.center.lat" />
+          <input type="text" name="lb-lat" v-model="inputBounds.leftBottom.lat" />
         </span>
-        <span class="form-control center">
-          <label for="lng">経度</label>
+        <span class="form-control">
+          <label for="lb-lng">経度</label>
           <br />
-          <input type="text" name="lng" v-model="inputConfig.center.lng" />
+          <input type="text" name="lb-lng" v-model="inputBounds.leftBottom.lng" />
         </span>
-        <span class="form-control zoom">
-          <label for="zoom">縮尺</label>
+        <p class="position-label">右上</p>
+        <span class="form-control">
+          <label for="ru-lat">緯度</label>
           <br />
-          <input type="text" name="zoom" v-model="inputConfig.zoom" />
+          <input type="text" name="ru-lat" v-model="inputBounds.rightUpper.lat" />
         </span>
-        <div class="button-box">
-          <button class="get" @click="getMapConfig">取得</button>
-          <button class="set" @click="setMapConfig">反映</button>
-        </div>
+        <span class="form-control">
+          <label for="ru-lng">経度</label>
+          <br />
+          <input type="text" name="ru-lng" v-model="inputBounds.rightUpper.lng" />
+        </span>
       </div>
       <div class="text-box">
         <span class="text-control center">
@@ -51,20 +54,12 @@ import { kouchiConfig } from "@/assets/js/mapConfig.js";
 import KouchiImage from "@/assets/img/kouchi.png";
 
 export default {
-  name: "Map",
   data() {
     return {
       apiKey: process.env.VUE_APP_GOOGLE_MAPS_API_KEY,
       google: null,
       map: null,
       initConfig: kouchiConfig,
-      inputConfig: {
-        center: {
-          lat: null,
-          lng: null
-        },
-        zoom: null
-      },
       overlay: null,
       initBounds: {
         leftBottom: {
@@ -76,6 +71,16 @@ export default {
           lng: kouchiConfig.center.lng + 0.001
         }
       },
+      inputBounds: {
+        leftBottom: {
+          lat: null,
+          lng: null
+        },
+        rightUpper: {
+          lat: null,
+          lng: null
+        }
+      },
       overlayImg: KouchiImage
     };
   },
@@ -85,9 +90,9 @@ export default {
     });
 
     this.map = this.initializeMap();
-    this.getMapConfig();
 
     this.overlay = this.initializeOverlay();
+    this.inputBounds = this.initBounds;
   },
   computed: {
     mapConfig() {
@@ -183,28 +188,6 @@ export default {
       };
 
       return new Overlay(this.bounds, this.overlayImg, this.map);
-    },
-    getMapConfig() {
-      const center = this.map.getCenter();
-      const zoom = this.map.getZoom();
-      this.inputConfig = {
-        center: {
-          lat: center.lat(),
-          lng: center.lng()
-        },
-        zoom: zoom
-      };
-    },
-    setMapConfig() {
-      const newConfig = {
-        center: {
-          lat: parseFloat(this.inputConfig.center.lat),
-          lng: parseFloat(this.inputConfig.center.lng)
-        },
-        zoom: parseInt(this.inputConfig.zoom)
-      };
-      this.map.setCenter(newConfig.center);
-      this.map.setZoom(newConfig.zoom);
     }
   }
 };
@@ -229,6 +212,13 @@ export default {
   width: 70vw;
 }
 
+.position-label {
+  font-size: 24px;
+  font-weight: bold;
+  padding-left: 4px;
+  margin: 0;
+}
+
 .form-control {
   display: inline-block;
   margin: 8px 4px;
@@ -242,32 +232,6 @@ export default {
   font-size: 18px;
   padding: 0 8px;
   height: 24px;
-}
-
-.button-box {
-  text-align: right;
-}
-
-.button-box button {
-  height: 32px;
-  width: 100px;
-  margin: 0 4px;
-  font-size: 16px;
-  border: none;
-  border-radius: 6px;
-  transition: opacity 0.3s;
-}
-
-.button-box button:hover {
-  opacity: 0.8;
-}
-
-.get {
-  background-color: #c0c0c0;
-}
-
-.set {
-  background-color: #00bfff;
 }
 
 .text-box {
