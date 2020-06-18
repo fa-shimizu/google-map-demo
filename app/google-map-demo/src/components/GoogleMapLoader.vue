@@ -46,20 +46,18 @@
 
 <script>
 import GoogleMapsApiLoader from "google-maps-api-loader";
+import { Overlay } from "@/assets/js/overlay.js";
+import { kouchiConfig } from "@/assets/js/mapConfig.js";
+import KouchiImage from "@/assets/img/kouchi.png";
 
 export default {
   name: "Map",
   data() {
     return {
+      apiKey: process.env.VUE_APP_GOOGLE_MAPS_API_KEY,
       google: null,
       map: null,
-      initConfig: {
-        center: {
-          lat: 35.68944,
-          lng: 139.69167
-        },
-        zoom: 17
-      },
+      initConfig: kouchiConfig,
       inputConfig: {
         center: {
           lat: null,
@@ -67,15 +65,29 @@ export default {
         },
         zoom: null
       },
-      apiKey: process.env.VUE_APP_GOOGLE_MAPS_API_KEY
+      overlay: null,
+      initBounds: {
+        leftBottom: {
+          lat: kouchiConfig.center.lat - 0.001,
+          lng: kouchiConfig.center.lng - 0.001
+        },
+        rightUpper: {
+          lat: kouchiConfig.center.lat + 0.001,
+          lng: kouchiConfig.center.lng + 0.001
+        }
+      },
+      overlayImg: KouchiImage
     };
   },
   async mounted() {
     this.google = await GoogleMapsApiLoader({
       apiKey: this.apiKey
     });
+
     this.map = this.initializeMap();
     this.getMapConfig();
+
+    this.overlay = this.initializeOverlay();
   },
   computed: {
     mapConfig() {
@@ -93,11 +105,84 @@ export default {
       } else {
         return this.initConfig;
       }
+    },
+    bounds() {
+      return new this.google.maps.LatLngBounds(
+        new this.google.maps.LatLng(
+          this.initBounds.leftBottom.lat,
+          this.initBounds.leftBottom.lng
+        ),
+        new this.google.maps.LatLng(
+          this.initBounds.rightUpper.lat,
+          this.initBounds.rightUpper.lng
+        )
+      );
     }
   },
   methods: {
     initializeMap() {
       return new this.google.maps.Map(this.$refs.googleMap, this.initConfig);
+    },
+    initializeOverlay() {
+      Overlay.prototype = new this.google.maps.OverlayView();
+
+      /**
+       * onAdd is called when the map's panes are ready and the overlay has been
+       * added to the map.
+       */
+      Overlay.prototype.onAdd = function() {
+        const div = document.createElement("div");
+        div.style.borderStyle = "none";
+        div.style.borderWidth = "0px";
+        div.style.position = "absolute";
+
+        // Create the img element and attach it to the div.
+        const img = document.createElement("img");
+        img.src = this.image_;
+        img.style.width = "100%";
+        img.style.height = "100%";
+        img.style.position = "absolute";
+        div.appendChild(img);
+
+        this.div_ = div;
+
+        // Add the element to the "overlayLayer" pane.
+        const panes = this.getPanes();
+        panes.overlayLayer.appendChild(div);
+      };
+
+      Overlay.prototype.draw = function() {
+        // We use the south-west and north-east
+        // coordinates of the overlay to peg it to the correct position and size.
+        // To do this, we need to retrieve the projection from the overlay.
+        const overlayProjection = this.getProjection();
+
+        // Retrieve the south-west and north-east coordinates of this overlay
+        // in LatLngs and convert them to pixel coordinates.
+        // We'll use these coordinates to resize the div.
+        const sw = overlayProjection.fromLatLngToDivPixel(
+          this.bounds_.getSouthWest()
+        );
+        const ne = overlayProjection.fromLatLngToDivPixel(
+          this.bounds_.getNorthEast()
+        );
+
+        // Resize the image's div to fit the indicated dimensions.
+        const div = this.div_;
+        div.style.left = sw.x + "px";
+        div.style.top = ne.y + "px";
+        div.style.width = ne.x - sw.x + "px";
+        div.style.height = sw.y - ne.y + "px";
+      };
+
+      // The onRemove() method will be called automatically from the API if
+      // we ever set the overlay's map property to 'null'.
+      Overlay.prototype.onRemove = function() {
+        this.div_.parentNode.removeChild(this.div_);
+        this.div_ = null;
+      };
+
+      return new Overlay(this.bounds, this.overlayImg, this.map);
     },
     getMapConfig() {
       const center = this.map.getCenter();
