@@ -4,7 +4,12 @@
 
 <script>
 export default {
-  name: "GoogleMapComponent"
+  name: "GoogleMapComponent",
+  data() {
+    return {
+      apiKey: process.env.VUE_APP_GOOGLE_MAPS_API_KEY
+    };
+  }
 };
 </script>
 
