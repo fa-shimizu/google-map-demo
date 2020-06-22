@@ -1,9 +1,9 @@
 export const kouchiMapConfig = {
   center: {
-    lat: 33.52715847033247,
-    lng: 133.56492459891913,
+    lat: 33.5278739726833,
+    lng: 133.55668485282538,
   },
-  zoom: 12,
+  zoom: 13,
 };
 
 export const kouchiBoundsConfig = {
