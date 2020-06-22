@@ -50,7 +50,7 @@
 <script>
 import GoogleMapsApiLoader from "google-maps-api-loader";
 import { Overlay } from "@/assets/js/overlay.js";
-import { kouchiConfig } from "@/assets/js/mapConfig.js";
+import { kouchiMapConfig, kouchiBoundsConfig } from "@/assets/js/mapConfig.js";
 import KouchiImage from "@/assets/img/kouchi.png";
 
 export default {
@@ -59,18 +59,9 @@ export default {
       apiKey: process.env.VUE_APP_GOOGLE_MAPS_API_KEY,
       google: null,
       map: null,
-      initConfig: kouchiConfig,
+      initConfig: kouchiMapConfig,
       overlay: null,
-      initBounds: {
-        leftBottom: {
-          lat: kouchiConfig.center.lat - 0.001,
-          lng: kouchiConfig.center.lng - 0.001
-        },
-        rightUpper: {
-          lat: kouchiConfig.center.lat + 0.001,
-          lng: kouchiConfig.center.lng + 0.001
-        }
-      },
+      initBounds: kouchiBoundsConfig,
       inputBounds: {
         leftBottom: {
           lat: null,
@@ -91,7 +82,6 @@ export default {
 
     this.map = this.initializeMap();
 
-    this.overlay = this.initializeOverlay();
     this.inputBounds = this.initBounds;
   },
   computed: {
@@ -110,25 +100,29 @@ export default {
       } else {
         return this.initConfig;
       }
-    },
-    bounds() {
-      return new this.google.maps.LatLngBounds(
-        new this.google.maps.LatLng(
-          this.initBounds.leftBottom.lat,
-          this.initBounds.leftBottom.lng
-        ),
-        new this.google.maps.LatLng(
-          this.initBounds.rightUpper.lat,
-          this.initBounds.rightUpper.lng
-        )
-      );
+    }
+  },
+  watch: {
+    inputBounds: {
+      handler(newValue) {
+        if (this.overlay !== null) {
+          this.overlay.setMap(null);
+        }
+
+        this.overlay = this.initializeOverlay(
+          this.bounds(newValue),
+          this.overlayImg,
+          this.map
+        );
+      },
+      deep: true
     }
   },
   methods: {
     initializeMap() {
       return new this.google.maps.Map(this.$refs.googleMap, this.initConfig);
     },
-    initializeOverlay() {
+    initializeOverlay(bounds, img, map) {
       Overlay.prototype = new this.google.maps.OverlayView();
 
       /**
@@ -187,7 +181,19 @@ export default {
         this.div_ = null;
       };
 
-      return new Overlay(this.bounds, this.overlayImg, this.map);
+      return new Overlay(bounds, img, map);
+    },
+    bounds(boundsObj) {
+      return new this.google.maps.LatLngBounds(
+        new this.google.maps.LatLng(
+          boundsObj.leftBottom.lat,
+          boundsObj.leftBottom.lng
+        ),
+        new this.google.maps.LatLng(
+          boundsObj.rightUpper.lat,
+          boundsObj.rightUpper.lng
+        )
+      );
     }
   }
 };
